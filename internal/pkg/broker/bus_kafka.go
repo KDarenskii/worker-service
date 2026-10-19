@@ -8,10 +8,9 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
+	"github.com/KDarenskii/worker-service/internal/pkg/broker/codec"
 	"github.com/gofrs/uuid"
 	"github.com/rs/zerolog/log"
-
-	"github.com/KDarenskii/worker-service/internal/pkg/broker/codec"
 )
 
 const (

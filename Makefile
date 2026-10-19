@@ -3,6 +3,8 @@
 # =============================================================================
 OUTPUT := ./bin/app
 GO_LINT_VERSION := 2.7.2
+# golangci-lint v2.7.2 не умеет читать export data новых версий Go (1.27+), поэтому фиксируем тулчейн
+GO_LINT_TOOLCHAIN := go1.25.5
 GO_FILE := ./main.go
 
 # =============================================================================
@@ -32,11 +34,11 @@ test: ## Запуск тестов
 # =============================================================================
 .PHONY: lint
 lint: ## Запуск линтера
-	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v${GO_LINT_VERSION} run
+	GOTOOLCHAIN=${GO_LINT_TOOLCHAIN} go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v${GO_LINT_VERSION} run
 
 .PHONY: lint-fix
 lint-fix: ## Запуск линтера с автофиксом
-	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v${GO_LINT_VERSION} run --fix
+	GOTOOLCHAIN=${GO_LINT_TOOLCHAIN} go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v${GO_LINT_VERSION} run --fix
 
 # =============================================================================
 # Окружение (Docker)
@@ -83,7 +85,7 @@ ci: ## Запустить все CI проверки
 	go test -race -coverprofile=coverage.out -covermode=atomic ./...
 	@echo ""
 	@echo "=== Lint ==="
-	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v${GO_LINT_VERSION} run --timeout=10m
+	GOTOOLCHAIN=${GO_LINT_TOOLCHAIN} go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v${GO_LINT_VERSION} run --timeout=10m
 	@echo ""
 	@echo "CI passed!"
 
