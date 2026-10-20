@@ -25,11 +25,13 @@ func NewOrderCreatedEventsCatcher(
 
 func (p *orderCreatedProc) StartAsync(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
-	defer wg.Done()
 
 	if err := p.bus.Subscribe(ctx, wg, p.h.CallbackOrderCreated); err != nil {
+		wg.Done()
 		log.Fatal().Str("topic", p.bus.QueueName()).Err(err).Msg("broker: failed to subscribe")
 	}
 
 	log.Info().Str("topic", p.bus.QueueName()).Msg("broker: subscription requested")
+
+	wg.Done()
 }

@@ -12,11 +12,14 @@ import (
 
 	"github.com/KDarenskii/worker-service/internal/app/config"
 	"github.com/KDarenskii/worker-service/internal/app/entity"
+	eorder "github.com/KDarenskii/worker-service/internal/app/handler/event/order"
 	"github.com/KDarenskii/worker-service/internal/app/processor"
+	eprocessor "github.com/KDarenskii/worker-service/internal/app/processor/event"
 	rprocessor "github.com/KDarenskii/worker-service/internal/app/processor/http"
 	mmonitor "github.com/KDarenskii/worker-service/internal/app/processor/monitor"
 	"github.com/KDarenskii/worker-service/internal/app/util"
 	"github.com/KDarenskii/worker-service/internal/pkg/broker"
+	"github.com/KDarenskii/worker-service/internal/pkg/broker/codec"
 	"github.com/KDarenskii/worker-service/internal/pkg/constant"
 	"github.com/KDarenskii/worker-service/internal/pkg/http/httph"
 	"github.com/rs/zerolog/log"
@@ -131,6 +134,29 @@ func (b *Builder) BuildBrokerKafka() {
 				),
 			)
 		},
+	)
+}
+
+func (b *Builder) BuildConsumerOrderCreated() {
+	b.exec(
+		func(b *Builder) {
+			cfg := config.Root.Broker.Kafka
+
+			topic := cfg.ModelOrder.Created.Topic
+			group := broker.Coalesce(cfg.ModelOrder.Created.ConsumerGroup, cfg.ConsumerGroup)
+
+			bus, err := broker.NewBus(
+				b.kafkaClient, codec.NewCodecJson[entity.EventOrderCreated](), topic, group,
+			)
+			if err != nil {
+				b.err = fmt.Errorf("kafka bus: %w", err)
+				return
+			}
+
+			b.busOrderCreated = bus
+
+			b.processors = append(b.processors, eprocessor.NewOrderCreatedEventsCatcher(eorder.NewHandler(), bus))
+		}, b.kafkaClient,
 	)
 }
 

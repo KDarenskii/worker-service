@@ -17,6 +17,7 @@ func main() {
 		Usage:   "MoM Boilerplate V2 — шаблон Go сервиса",
 		Commands: []*cli.Command{
 			cmd.WebServer(),
+			cmd.SubscribeOrderCreated(),
 		},
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
