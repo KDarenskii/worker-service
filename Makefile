@@ -4,7 +4,7 @@
 OUTPUT := ./bin/app
 GO_LINT_VERSION := 2.7.2
 # golangci-lint v2.7.2 не умеет читать export data новых версий Go (1.27+), поэтому фиксируем тулчейн
-GO_LINT_TOOLCHAIN := go1.25.5
+GO_LINT_TOOLCHAIN := go1.26.10
 GO_FILE := ./main.go
 
 # =============================================================================

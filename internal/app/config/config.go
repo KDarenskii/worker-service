@@ -16,10 +16,11 @@ import (
 type (
 	// Config — главная структура конфигурации сервиса.
 	Config struct {
-		Processor section.Processor
-		Monitor   section.Monitor
-		Broker    section.Broker
-		Meta      Meta `ignore:"true"`
+		Processor  section.Processor
+		Monitor    section.Monitor
+		Broker     section.Broker
+		Repository section.Repository
+		Meta       Meta `ignore:"true"`
 	}
 
 	// Meta содержит метаданные о загрузке конфига.
@@ -74,11 +75,13 @@ func Load(args LoadArgs) {
 
 	// Инициализируем Sentry (если включён) и подмешиваем его writer в логгер.
 	output := args.Output
-	if w, ok := msentry.Init(Root.Monitor.Sentry, msentry.Options{
-		ServiceName: constant.AppName,
-		Environment: Root.Monitor.Environment,
-		Release:     constant.Version,
-	}); ok {
+	if w, ok := msentry.Init(
+		Root.Monitor.Sentry, msentry.Options{
+			ServiceName: constant.AppName,
+			Environment: Root.Monitor.Environment,
+			Release:     constant.Version,
+		},
+	); ok {
 		output = zerolog.MultiLevelWriter(args.Output, w)
 	}
 
