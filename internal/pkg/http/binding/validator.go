@@ -19,7 +19,7 @@ var _ StructValidator = &defaultValidator{}
 func (v *defaultValidator) ValidateStruct(obj any) error {
 	value := reflect.ValueOf(obj)
 	valueType := value.Kind()
-	if valueType == reflect.Ptr {
+	if valueType == reflect.Pointer {
 		valueType = value.Elem().Kind()
 	}
 	if valueType == reflect.Struct {
