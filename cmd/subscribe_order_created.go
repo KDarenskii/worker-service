@@ -16,12 +16,11 @@ func SubscribeOrderCreated() *cli.Command {
 	}
 }
 
-// cmdSubscribeOrderCreated — handler команды subscribe-order-created.
-// Поднимает consumer Kafka + служебный HTTP (health/metrics/pprof) под общий graceful shutdown.
 func cmdSubscribeOrderCreated(cCtx *cli.Context) error {
 	app := builder.NewBuilder(cCtx)
 	app.BuildConfig()
 	app.BuildMonitorOpenTelemetry()
+	app.BuildConnRedis()
 	app.BuildBrokerKafka()
 	app.BuildConsumerOrderCreated()
 	app.BuildProcHttp()

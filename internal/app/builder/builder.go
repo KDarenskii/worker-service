@@ -17,6 +17,7 @@ import (
 	eprocessor "github.com/KDarenskii/worker-service/internal/app/processor/event"
 	rprocessor "github.com/KDarenskii/worker-service/internal/app/processor/http"
 	mmonitor "github.com/KDarenskii/worker-service/internal/app/processor/monitor"
+	rcredis "github.com/KDarenskii/worker-service/internal/app/repository/conn/redis"
 	"github.com/KDarenskii/worker-service/internal/app/util"
 	"github.com/KDarenskii/worker-service/internal/pkg/broker"
 	"github.com/KDarenskii/worker-service/internal/pkg/broker/codec"
@@ -43,6 +44,8 @@ type Builder struct {
 
 	// Kafka-клиент (общий producer + фабрика consumer groups)
 	kafkaClient *broker.KafkaClient
+
+	connRedis *rcredis.Client
 
 	// Шина события order.created (consumer)
 	busOrderCreated broker.Bus[entity.EventOrderCreated]
@@ -94,6 +97,24 @@ func (b *Builder) buildConfig(args config.LoadArgs, injectors []func(c *config.C
 			injector(&config.Root)
 		}
 	}
+}
+
+// //////////////////////////////////////////////////////////////////////////////
+// /// REPOSITORY CONNECTIONS ///////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////////////////
+
+func (b *Builder) BuildConnRedis() {
+	b.exec(
+		func(b *Builder) {
+			conn, err := rcredis.NewClient(b.ctx, config.Root.Repository.Redis)
+			if err != nil {
+				b.err = fmt.Errorf("init redis connection: %w", err)
+				return
+			}
+
+			b.connRedis = conn
+		},
+	)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
