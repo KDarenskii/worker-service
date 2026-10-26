@@ -57,7 +57,9 @@ func (r *repoRedis) SetRates(ctx context.Context, from string, rates map[string]
 	pipeliner := r.client.Pipeline()
 
 	for to, value := range rates {
-		pipeliner.Set(ctx, r.buildKey(from, to), value, r.cacheTTL)
+		strRate := strconv.FormatFloat(value, 'f', -1, 64)
+
+		pipeliner.Set(ctx, r.buildKey(from, to), strRate, r.cacheTTL)
 	}
 
 	_, err := pipeliner.Exec(ctx)

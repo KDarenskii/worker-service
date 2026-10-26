@@ -62,12 +62,15 @@ func (c *Client) GetRates(ctx context.Context, base string) (map[string]float64,
 	}
 
 	response, err := c.httpClient.Do(request)
-
-	defer func() { _ = response.Body.Close() }()
-
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", entity.ErrFixerUnavailable, err.Error())
 	}
+
+	defer func() {
+		if response != nil {
+			_ = response.Body.Close()
+		}
+	}()
 
 	if response.StatusCode != http.StatusOK {
 		return nil, entity.ErrFixerUnavailable
