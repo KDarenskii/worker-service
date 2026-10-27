@@ -10,6 +10,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/KDarenskii/worker-service/internal/app/client/fixer"
 	"github.com/KDarenskii/worker-service/internal/app/config"
 	"github.com/KDarenskii/worker-service/internal/app/entity"
 	eorder "github.com/KDarenskii/worker-service/internal/app/handler/event/order"
@@ -17,7 +18,11 @@ import (
 	eprocessor "github.com/KDarenskii/worker-service/internal/app/processor/event"
 	rprocessor "github.com/KDarenskii/worker-service/internal/app/processor/http"
 	mmonitor "github.com/KDarenskii/worker-service/internal/app/processor/monitor"
+	"github.com/KDarenskii/worker-service/internal/app/repository"
 	rcredis "github.com/KDarenskii/worker-service/internal/app/repository/conn/redis"
+	rcurrency "github.com/KDarenskii/worker-service/internal/app/repository/currency"
+	"github.com/KDarenskii/worker-service/internal/app/service"
+	scurrency "github.com/KDarenskii/worker-service/internal/app/service/currency"
 	"github.com/KDarenskii/worker-service/internal/app/util"
 	"github.com/KDarenskii/worker-service/internal/pkg/broker"
 	"github.com/KDarenskii/worker-service/internal/pkg/broker/codec"
@@ -45,12 +50,19 @@ type Builder struct {
 	// Kafka-клиент (общий producer + фабрика consumer groups)
 	kafkaClient *broker.KafkaClient
 
-	connRedis *rcredis.Client
-
 	// Шина события order.created (consumer)
 	busOrderCreated broker.Bus[entity.EventOrderCreated]
 
-	// TODO: добавить зависимости по мере появления (repositories, services, handlers, monitors).
+	connRedis *rcredis.Client
+
+	// Внешние клиенты
+	clientFixer *fixer.Client
+
+	// Репозитории
+	repoCurrencyRate repository.CurrencyRate
+
+	// Сервисы
+	currencyService service.Currency
 }
 
 // NewBuilder создаёт новый Builder и настраивает обработку сигналов OS.
@@ -114,6 +126,46 @@ func (b *Builder) BuildConnRedis() {
 
 			b.connRedis = conn
 		},
+	)
+}
+
+// //////////////////////////////////////////////////////////////////////////////
+// /// REPOSITORIES ///////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////////////////
+
+func (b *Builder) BuildRepoCurrencyRate() {
+	b.exec(
+		func(b *Builder) {
+			repo := rcurrency.NewRepoFromRedis(b.connRedis.Client, config.Root.Client.Fixer.CacheTTL)
+			b.repoCurrencyRate = repo
+		}, b.connRedis,
+	)
+}
+
+// //////////////////////////////////////////////////////////////////////////////
+// /// CLIENTS ///////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////////////////
+
+func (b *Builder) BuildClientFixer() {
+	b.exec(
+		func(b *Builder) {
+			client := fixer.NewClient(config.Root.Client.Fixer)
+			b.clientFixer = client
+		},
+	)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+///// SERVICES /////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+// BuildServiceCurrency собирает сервис курсов валют (cache-aside: Redis -> Fixer).
+func (b *Builder) BuildServiceCurrency() {
+	b.exec(
+		func(b *Builder) {
+			srv := scurrency.NewService(b.clientFixer, b.repoCurrencyRate)
+			b.currencyService = srv
+		}, b.clientFixer, b.repoCurrencyRate,
 	)
 }
 
